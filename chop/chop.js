@@ -258,7 +258,7 @@ try {
     console.log('IMPERATIVE implementation');
     tests(chop_imp);
 
-    console.log('IMPERATIVE implementation');
+    console.log('FUNCTIONAL implementation');
     tests(chop_func);
 
     console.log('OOP implementation 1');
