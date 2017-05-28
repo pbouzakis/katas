@@ -6,6 +6,7 @@ const assert = require('assert');
 // Some of this is too much for the problem, but that's not the point of the exercise.
 // Instead we are exploring and playing around with new techniques and constraints.
 
+
 // STANDARD IMPERATIVE VERSION //////////////////////////////////
 
 function chop_imp(num, list) {
@@ -91,47 +92,44 @@ const right_of_mid = (list) =>
     list.slice(mid_index_of(list) + 1);
 
 
+const is_num_in_middle = (num, list) =>
+    mid_val_of(list) === num;
+
+
+const is_num_on_the_right = (num, list) =>
+    num > mid_val_of(list);
+
+
 const len = (list) =>
     list.length;
+
+
+const case_of = (datatype, cases) =>
+    datatype.caseOf(cases);
 
 
 // FUNCTION STYLE (ADT) ///////////////////////////////////
 
 
 const chop_func_adt = (num, list, offset = 0) =>
-    List.find(num, list, offset)
-        .caseOf({
-            None: () => -1,
-            Just: index => index,
-        });
+    case_of(bin_search(num, list, offset), {
+        None: () => -1,
+        Just: index => index,
+    });
 
-const List = {
-    find: (num, list, offset) => {
-        if (Search.is_empty(list)) {
-            return Maybe.None();
-        }
-        else if (Search.is_num_in_middle(num, list)) {
-            return Maybe.Just(mid_index_of(list));
-        }
-        else if (Search.is_num_on_the_right(num, list)) {
-            return List.find(num, right_of_mid(list), offset + mid_index_of(list) + 1);
-        }
-        else {
-            return List.find(num, left_of_mid(list), offset);
-        }
+const bin_search = (num, list, offset) => {
+    if (len(list) === 0) {
+        return Maybe.None()
     }
-};
-
-
-const Search = {
-    is_empty: (list) =>
-        len(list) === 0,
-
-    is_num_in_middle: (num, list) =>
-        mid_val_of(list) === num,
-
-    is_num_on_the_right: (num, list) =>
-        num > mid_val_of(list)
+    else if (is_num_in_middle(num, list)) {
+        return Maybe.Just(mid_index_of(list) + offset);
+    }
+    else if (is_num_on_the_right(num, list)) {
+        return bin_search(num, right_of_mid(list), offset + mid_index_of(list) + 1);
+    }
+    else {
+        return bin_search(num, left_of_mid(list), offset);
+    }
 };
 
 
@@ -147,6 +145,49 @@ const Maybe = {
             caseOf: ({None}) => None()
         })
 };
+
+
+const chop_func_adt_2 = (num, list, start = 0) =>
+    case_of(locate(num, list, start), {
+        None: () => -1,
+        Found: index => index,
+        List: (slice_list, slice_start) => chop_func_adt_2(num, slice_list, slice_start)
+    });
+
+
+const locate = (num, list, start) => {
+    if (len(list) === 0) {
+        return Location.None();
+    }
+    else if (is_num_in_middle(num, list)) {
+        return Location.Found(mid_index_of(list) + start);
+    }
+    else if (is_num_on_the_right(num, list)) {
+        return Location.List(right_of_mid(list), start + mid_index_of(list) + 1);
+    }
+    else {
+        return Location.List(left_of_mid(list), start);
+    }
+};
+
+
+const Location = {
+    None: () =>
+        ({
+            caseOf: ({None})=> None()
+        }),
+
+    Found: (index) =>
+        ({
+            caseOf: ({Found}) => Found(index)
+        }),
+
+    List: (list, start) =>
+        ({
+            caseOf: ({List}) => List(list, start)
+        })
+};
+
 
 // OOP STYLE //////////////////////////////////////////////
 
@@ -290,46 +331,47 @@ function chop_oop_2(num, list) {
 function tests(chop) {
     assert.equal(-1, chop(3, []))
     assert.equal(-1, chop(3, [1]))
-    // assert.equal(0,  chop(1, [1]))
-    //
-    // assert.equal(0,  chop(1, [1, 3, 5]))
-    // assert.equal(1,  chop(3, [1, 3, 5]))
-    // assert.equal(2,  chop(5, [1, 3, 5]))
-    // assert.equal(-1, chop(0, [1, 3, 5]))
-    // assert.equal(-1, chop(2, [1, 3, 5]))
-    // assert.equal(-1, chop(4, [1, 3, 5]))
-    // assert.equal(-1, chop(6, [1, 3, 5]))
-    //
-    // assert.equal(0,  chop(1, [1, 3, 5, 7]))
-    // assert.equal(1,  chop(3, [1, 3, 5, 7]))
-    // assert.equal(2,  chop(5, [1, 3, 5, 7]))
-    // assert.equal(3,  chop(7, [1, 3, 5, 7]))
-    // assert.equal(-1, chop(0, [1, 3, 5, 7]))
-    // assert.equal(-1, chop(2, [1, 3, 5, 7]))
-    // assert.equal(-1, chop(4, [1, 3, 5, 7]))
-    // assert.equal(-1, chop(6, [1, 3, 5, 7]))
-    // assert.equal(-1, chop(8, [1, 3, 5, 7]))
+    assert.equal(0,  chop(1, [1]))
+
+    assert.equal(0,  chop(1, [1, 3, 5]))
+    assert.equal(1,  chop(3, [1, 3, 5]))
+    assert.equal(2,  chop(5, [1, 3, 5]))
+    assert.equal(-1, chop(0, [1, 3, 5]))
+    assert.equal(-1, chop(2, [1, 3, 5]))
+    assert.equal(-1, chop(4, [1, 3, 5]))
+    assert.equal(-1, chop(6, [1, 3, 5]))
+
+    assert.equal(0,  chop(1, [1, 3, 5, 7]))
+    assert.equal(1,  chop(3, [1, 3, 5, 7]))
+    assert.equal(2,  chop(5, [1, 3, 5, 7]))
+    assert.equal(3,  chop(7, [1, 3, 5, 7]))
+    assert.equal(-1, chop(0, [1, 3, 5, 7]))
+    assert.equal(-1, chop(2, [1, 3, 5, 7]))
+    assert.equal(-1, chop(4, [1, 3, 5, 7]))
+    assert.equal(-1, chop(6, [1, 3, 5, 7]))
+    assert.equal(-1, chop(8, [1, 3, 5, 7]))
 }
 
 
 console.log('BEGIN tests...')
 try {
-    console.log('IMPERATIVE implementation');
-    tests(chop_imp);
+    const implementations = {
+        chop_imp,
+        chop_func,
+        chop_func_adt,
+        chop_func_adt_2,
+        chop_oop_1,
+        chop_oop_2,
+    };
 
-    console.log('FUNCTIONAL implementation');
-    tests(chop_func);
-
-    console.log('FUNCTIONAL (adt) implementation');
-    tests(chop_func_adt);
-
-    console.log('OOP implementation 1');
-    tests(chop_oop_1);
-
-    console.log('OOP implementation 2');
-    tests(chop_oop_2);
+    Object.keys(implementations).forEach((key) => {
+        console.log(`${key} running tests`);
+        tests(implementations[key]);
+        console.log(`${key} has passed!\n`);
+    });
 
     console.log('SUCCESS!!');
+
 } catch(e) {
     console.log('FAILED!!');
     console.error(e.message);
