@@ -12,7 +12,7 @@ class TennisGame
     end
 
     def score
-        Score.new(@player_one.points, @player_two.points)
+        Score.new(@player_one.points, @player_two.points, @advantage&.name)
     end
 
     def player_one_scores
@@ -32,11 +32,15 @@ class TennisGame
     def check_if_winner(player)
         if player.won?
             @winner = player
+        elsif player.advantage?
+            @advantage = player
+        else
+            @advantage = nil
         end
     end
 end
 
-Score = Struct.new(:player_one, :player_two) do
+Score = Struct.new(:player_one, :player_two, :advantage) do
 end
 
 class Player
@@ -46,6 +50,7 @@ class Player
         @name = name
         @points = points
         @won = false
+        @advantage = false
     end
 
     def points
@@ -53,15 +58,37 @@ class Player
     end
 
     def score_against(opponent)
-        if points == Points::FORTY && opponent.points < Points::FORTY
+        if breakpoint(opponent)
             @won = true
+        elsif deuce(opponent)
+            if opponent.advantage?
+                opponent.advantage_lost
+            else
+                @advantage = true
+            end
         else
             @points = @points.next_point
         end
     end
 
+    def advantage_lost
+        @advantage = false
+    end
+
+    def deuce(opponent)
+        points == Points::FORTY && opponent.points == Points::FORTY
+    end
+
+    def breakpoint(opponent)
+        points == Points::FORTY && (opponent.points < Points::FORTY || @advantage)
+    end
+
     def won?
         @won
+    end
+
+    def advantage?
+        @advantage
     end
 end
 
@@ -171,6 +198,79 @@ describe TennisGame do
 
         it "has the player one as the winner" do
             @game.winner.name.must_equal :player_two
+        end
+    end
+
+    describe "when each player score 3 times" do
+        before do
+            @game.player_one_scores
+            @game.player_two_scores
+            @game.player_one_scores
+            @game.player_two_scores
+            @game.player_one_scores
+            @game.player_two_scores
+        end
+
+        it "has reports the score FORTY to FORTY" do
+            @game.score.must_equal Score.new(Points::FORTY, Points::FORTY)
+        end
+
+        describe "when player one scores" do
+            before do
+                @game.player_one_scores
+            end
+
+            it "reports the game is not over" do
+                @game.over?.must_equal false
+            end
+
+            it "still reports the score FORTY to FORTY with advantage player_one" do
+                @game.score.must_equal Score.new(Points::FORTY, Points::FORTY, :player_one)
+            end
+
+            describe "when player one scores again" do
+                before do
+                    @game.player_one_scores
+                end
+
+                it "reports the game over" do
+                    @game.over?.must_equal true
+                end
+            end
+
+            describe "when player two scores" do
+                before do
+                    @game.player_two_scores
+                end
+
+                it "reports the game over NOT over" do
+                    @game.over?.must_equal false
+                end
+
+                it "still reports the score back to FORTY to FORTY with no advantage" do
+                    @game.score.must_equal Score.new(Points::FORTY, Points::FORTY)
+                end
+
+                describe "when player one scores again" do
+                    before do
+                        @game.player_one_scores
+                    end
+
+                    it "still reports the score FORTY to FORTY with advantage player_one" do
+                        @game.score.must_equal Score.new(Points::FORTY, Points::FORTY, :player_one)
+                    end
+                end
+
+                describe "when player two scores again" do
+                    before do
+                        @game.player_two_scores
+                    end
+
+                    it "still reports the score FORTY to FORTY with advantage player_one" do
+                        @game.score.must_equal Score.new(Points::FORTY, Points::FORTY, :player_two)
+                    end
+                end
+            end
         end
     end
 end
