@@ -1,6 +1,8 @@
 require 'minitest/autorun'
 require "minitest/spec"
 
+# First stab at tennis game. This is one of my first ruby scripts :)
+
 class TennisGame
     attr_accessor :winner
 
@@ -12,7 +14,7 @@ class TennisGame
     end
 
     def score
-        Score.new(@player_one.points, @player_two.points, @advantage&.name)
+        Score.new(@player_one.points, @player_two.points, advantage)
     end
 
     def player_one_scores
@@ -25,6 +27,14 @@ class TennisGame
         check_if_winner(@player_two)
     end
 
+    def advantage
+        if @player_one.advantage?
+            @player_one.name
+        elsif @player_two.advantage?
+            @player_two.name
+        end
+    end
+
     def over?
         @winner != nil
     end
@@ -32,10 +42,6 @@ class TennisGame
     def check_if_winner(player)
         if player.won?
             @winner = player
-        elsif player.advantage?
-            @advantage = player
-        else
-            @advantage = nil
         end
     end
 end
