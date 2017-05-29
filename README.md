@@ -7,3 +7,9 @@ A kata is an exercise in karate where you repeat a form many, many times, making
 
 In addition to perfecting the craft, hopefully this repo can serve as an exploration of new
 programming paradigms, techniques, and languages.
+
+
+## Sources
+- http://codingdojo.org/KataCatalogue/
+- http://codekata.com/
+- http://agilekatas.co.uk/katas
